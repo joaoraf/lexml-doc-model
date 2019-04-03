@@ -116,7 +116,7 @@ abstract sealed class Agrupador extends HierarchicalElement {
   val rotulo : Option[Rotulo] 
   val nomeAgrupador : Option[NomeAgrupador]
   val id : ID
-  val elems : Seq[Agrupador] 
+  val elems : Seq[HierarchicalElement] 
 }
 
 final case class Rotulo(rotulo : String)
@@ -146,14 +146,14 @@ final case class AgrupadorPredef(
     id : ID,    
     rotulo : Option[Rotulo] = None,
     nomeAgrupador : Option[NomeAgrupador] = None,
-    elems : Seq[Agrupador] = Seq()) extends Agrupador
+    elems : Seq[HierarchicalElement] = Seq()) extends Agrupador
 
 final case class AgrupadorGenerico(
     nome : String,    
     id : ID,    
     rotulo : Option[Rotulo] = None,
     nomeAgrupador : Option[NomeAgrupador] = None,
-    elems : Seq[Agrupador] = Seq()) extends Agrupador {
+    elems : Seq[HierarchicalElement] = Seq()) extends Agrupador {
   final val tipoAgrupador = TA_Generico
 }
 
