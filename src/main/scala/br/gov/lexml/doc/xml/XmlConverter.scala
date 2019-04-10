@@ -133,7 +133,7 @@ object XmlConverter {
       case t :  M.TipoDispositivoNaoArtigo with M.TipoDispositivoPredef => 
         M.DispositivoPredefNA(
           id = id, 
-          tipoDisp = t,
+          tipoDispositivo = t,
           titulo = titulo, 
           rotulo = rotulo, 
           conteudo = conteudo, 

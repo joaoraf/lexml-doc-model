@@ -196,7 +196,7 @@ case object TD_Generico extends TipoDispositivoNaoArtigo
 trait Dispositivo extends LXContainer {
   val tipoDispositivo : TipoDispositivo
   val titulo : Option[TituloDispositivo]
-  val rotulo : Option[Rotulo]
+  val rotulo : Option[Rotulo] 
   val conteudo : Option[ConteudoDispositivo]  
   val alteracao : Option[Alteracao]
   val containers : Seq[LXContainer]    
@@ -235,15 +235,16 @@ trait DispositivoNaoArtigo extends Dispositivo {
 
 final case class DispositivoPredefNA(
     id : ID,
-    tipoDisp : TipoDispositivoPredef with TipoDispositivoNaoArtigo,
+    override val tipoDispositivo : TipoDispositivoPredef with TipoDispositivoNaoArtigo,
     titulo : Option[TituloDispositivo] = None,
     rotulo : Option[Rotulo] = None,
     conteudo : Option[ConteudoDispositivo] = None,
     alteracao : Option[Alteracao] = None,
     containers : Seq[LXContainer] = Seq()        
-)  extends DispositivoPredef with DispositivoNaoArtigo {
-  val tipoDispositivoPredef = tipoDisp
-  val tipoDispositivoNaoArtigo = tipoDisp
+)  extends DispositivoPredef with DispositivoNaoArtigo {    
+  val tipoDispositivoPredef = tipoDispositivo
+  val tipoDispositivoNaoArtigo = tipoDispositivo  
+  Ensuring(this).ensuring(tipoDispositivo != null, "tipoDispositivo is null!")
 }
 
 final case class DispositivoGenerico(
@@ -424,7 +425,7 @@ case object THIE_Anchor extends TipoHtmlInlineElement
 
 case object THIE_Span extends TipoHtmlInlineElement
 
-sealed trait HTMLinlineElement extends InlineElement {
+sealed trait HTMLinlineElement extends InlineElement  {
   val tipoHtmlInlineElement : TipoHtmlInlineElement
 }
 
