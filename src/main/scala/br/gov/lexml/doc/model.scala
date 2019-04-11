@@ -1,10 +1,49 @@
 package br.gov.lexml.doc
 
 import java.net.URI
+import scala.language.existentials
 
 final case class LexmlDocument(
     metadado : Metadado,
     contents : DocumentContents)
+
+/**
+ * ID
+ */
+    
+final case class ID(uri : URI)
+
+sealed trait HasID extends Product {
+  val id : ID
+}
+
+final case class LexMLURN(uri : URI) 
+
+final case class IDREF()
+
+/**
+ * General Types
+	*/
+
+
+
+sealed trait HasLang extends Product {
+  val lang : Option[Lang]
+}
+
+final case class Lang(code : String = Lang.DEFAULT) {
+  val isDefault = code == Lang.DEFAULT
+}
+
+object Lang {
+  val DEFAULT = "pt_BR"
+  def simplify(f : Option[Lang]) : Option[Lang] =
+    f.filterNot(_.isDefault)
+}
+
+final case class Mixed[T](elems : Seq[Either[T,String]] = Seq()) {
+  val empty = elems.isEmpty
+}    
     
 /**
  * Metadado    
@@ -20,6 +59,57 @@ final case class Identificacao(urn : LexMLURN)
 /**
  * Document Contents
  */
+
+
+final case class InlineSeq(mixedElems : Mixed[InlineElement] = Mixed(), lang : Option[Lang] = None) extends HasLang {
+  lazy val empty = mixedElems.empty
+  final def normalized = InlineSeq(mixedElems,Lang.simplify(lang))
+}
+
+trait HasInlineSeq[T <: HasInlineSeq[T]] extends Product {
+  val inlineSeq : InlineSeq
+  final lazy val empty = inlineSeq.empty
+  def mapInlineSeq(f : InlineSeq => InlineSeq) : T
+  def normalized = mapInlineSeq(_.normalized)
+}
+
+object HasInlineSeq {
+  def simplify[T <: HasInlineSeq[T]](x : Option[T]) : Option[T] = x match {
+    case None => None
+    case Some(y) => 
+      val z = y.normalized
+      if(z.empty) { None } else { Some(z) }
+  }   
+}
+
+
+trait HasInlineSeqs[T <: HasInlineSeq[T],Q <: HasInlineSeqs[T,Q]] {
+  val inlineSeqs : Seq[T]
+  def mapInlineSeqs(f : Seq[T] => Seq[T]) : Q 
+  final lazy val empty = inlineSeqs.forall(_.empty)
+  final def normalized = mapInlineSeqs { x =>
+    x.flatMap(y => HasInlineSeq.simplify(Some(y)))
+  }
+}
+
+object HasInlineSeqs {
+  def simplify[T <: HasInlineSeq[T],Q <: HasInlineSeqs[T,Q]](x : Option[Q]) : Option[Q] =
+    x.map(_.normalized).filterNot(_.empty)    
+}
+
+abstract sealed class TipoLista extends Product
+
+case object UL extends TipoLista
+
+case object OL extends TipoLista
+
+sealed trait LI_Item extends Product
+
+sealed trait InlineElement extends Product with LI_Item
+
+sealed trait LXInlineElement extends InlineElement
+
+
 abstract sealed class DocumentContentsType extends Product
 
 case object DCT_Norma extends DocumentContentsType
@@ -63,19 +153,21 @@ final case class HierarchicalStructure(
         
 }
 
-final case class FormulaPromulgacao(inlineSeq : InlineSeq = InlineSeq()) extends HasInlineSeq[FormulaPromulgacao]
+final case class FormulaPromulgacao(inlineSeq : InlineSeq,
+    abreAspas : Boolean, fechaAspas : Boolean) extends HasInlineSeq[FormulaPromulgacao]
+  with AlteracaoElement {
+  
+  override def mapInlineSeq(f : InlineSeq => InlineSeq) = 
+    copy(inlineSeq = f (inlineSeq))
+}
+
+final case class Epigrafe(inlineSeq : InlineSeq = InlineSeq(), abreAspas : Boolean, fechaAspas : Boolean) extends HasInlineSeq[Epigrafe] 
   with AlteracaoElement {
   override def mapInlineSeq(f : InlineSeq => InlineSeq) = 
     copy(inlineSeq = f (inlineSeq))
 }
 
-final case class Epigrafe(inlineSeq : InlineSeq = InlineSeq()) extends HasInlineSeq[Epigrafe] 
-  with AlteracaoElement {
-  override def mapInlineSeq(f : InlineSeq => InlineSeq) = 
-    copy(inlineSeq = f (inlineSeq))
-}
-
-final case class Ementa(inlineSeq : InlineSeq = InlineSeq()) extends HasInlineSeq[Ementa] 
+final case class Ementa(inlineSeq : InlineSeq = InlineSeq(), abreAspas : Boolean, fechaAspas : Boolean) extends HasInlineSeq[Ementa] 
   with AlteracaoElement {
   override def mapInlineSeq(f : InlineSeq => InlineSeq) = 
     copy(inlineSeq = f (inlineSeq))
@@ -86,7 +178,7 @@ final case class PreambuloLine(inlineSeq : InlineSeq = InlineSeq()) extends HasI
     copy(inlineSeq = f (inlineSeq))
 }
 
-final case class Preambulo(inlineSeqs : Seq[PreambuloLine] = Seq()) extends HasInlineSeqs[PreambuloLine,Preambulo] 
+final case class Preambulo(inlineSeqs : Seq[PreambuloLine] = Seq(), abreAspas : Boolean, fechaAspas : Boolean) extends HasInlineSeqs[PreambuloLine,Preambulo] 
   with AlteracaoElement {
   override def mapInlineSeqs(f : Seq[PreambuloLine] => Seq[PreambuloLine]) = 
     copy(inlineSeqs = f (inlineSeqs))
@@ -146,14 +238,18 @@ final case class AgrupadorPredef(
     id : ID,    
     rotulo : Option[Rotulo] = None,
     nomeAgrupador : Option[NomeAgrupador] = None,
-    elems : Seq[HierarchicalElement] = Seq()) extends Agrupador
+    elems : Seq[HierarchicalElement] = Seq(), 
+    abreAspas : Boolean, 
+    fechaAspas : Boolean) extends Agrupador
 
 final case class AgrupadorGenerico(
     nome : String,    
     id : ID,    
     rotulo : Option[Rotulo] = None,
     nomeAgrupador : Option[NomeAgrupador] = None,
-    elems : Seq[HierarchicalElement] = Seq()) extends Agrupador {
+    elems : Seq[HierarchicalElement] = Seq(), 
+    abreAspas : Boolean, 
+    fechaAspas : Boolean) extends Agrupador {
   final val tipoAgrupador = TA_Generico
 }
 
@@ -165,7 +261,7 @@ final case class Articulacao(elems : Seq[HierarchicalElement] = Seq()) {
  * LexML Containers
  */
 
-abstract sealed trait LXContainer extends HasID with AlteracaoElement 
+abstract sealed trait LXContainer extends HasID with AlteracaoElement  
 
 /**
  * Dispositivos
@@ -240,7 +336,9 @@ final case class DispositivoPredefNA(
     rotulo : Option[Rotulo] = None,
     conteudo : Option[ConteudoDispositivo] = None,
     alteracao : Option[Alteracao] = None,
-    containers : Seq[LXContainer] = Seq()        
+    containers : Seq[LXContainer] = Seq(), 
+    abreAspas : Boolean, 
+    fechaAspas : Boolean        
 )  extends DispositivoPredef with DispositivoNaoArtigo {    
   val tipoDispositivoPredef = tipoDispositivo
   val tipoDispositivoNaoArtigo = tipoDispositivo  
@@ -253,7 +351,9 @@ final case class DispositivoGenerico(
     rotulo : Option[Rotulo] = None,
     conteudo : Option[ConteudoDispositivo] = None,
     alteracao : Option[Alteracao] = None,
-    containers : Seq[LXContainer] = Seq()) extends DispositivoNaoArtigo {
+    containers : Seq[LXContainer] = Seq(), 
+    abreAspas : Boolean, 
+    fechaAspas : Boolean) extends DispositivoNaoArtigo {
   val tipoDispositivoNaoArtigo = TD_Generico
 }
     
@@ -268,7 +368,9 @@ final case class Artigo(
     rotulo : Option[Rotulo] = None,
     conteudo : Option[ConteudoDispositivo] = None,
     alteracao : Option[Alteracao] = None,
-    containers : Seq[LXContainer] = Seq()) extends DispositivoPredef with HierarchicalElement {
+    containers : Seq[LXContainer] = Seq(), 
+    abreAspas : Boolean, 
+    fechaAspas : Boolean) extends DispositivoPredef with HierarchicalElement {
   val tipoDispositivoPredef = TDP_Artigo
 }
 
@@ -289,7 +391,10 @@ final case class Alteracao(
     base : Option[LexMLURN] = None,
     mixedElems : Mixed[AlteracaoElement] = Mixed()) extends HasID with LXInlineElement
 
-abstract sealed trait AlteracaoElement extends Product    
+abstract sealed trait AlteracaoElement extends Product {
+  val abreAspas : Boolean
+  val fechaAspas : Boolean
+}
 
 /**
  * <xsd:element ref="FormulaPromulgacao"/>
@@ -304,45 +409,8 @@ abstract sealed trait AlteracaoElement extends Product
  * Inline elements    
  */
 
-trait HasInlineSeq[T <: HasInlineSeq[T]] extends Product {
-  val inlineSeq : InlineSeq
-  final lazy val empty = inlineSeq.empty
-  def mapInlineSeq(f : InlineSeq => InlineSeq) : T
-  def normalized = mapInlineSeq(_.normalized)
-}
-
-object HasInlineSeq {
-  def simplify[T <: HasInlineSeq[T]](x : Option[T]) : Option[T] = x match {
-    case None => None
-    case Some(y) => 
-      val z = y.normalized
-      if(z.empty) { None } else { Some(z) }
-  }   
-}
 
 
-final case class InlineSeq(mixedElems : Mixed[InlineElement] = Mixed(), lang : Option[Lang] = None) extends HasLang {
-  lazy val empty = mixedElems.empty
-  final def normalized = InlineSeq(mixedElems,Lang.simplify(lang))
-}
-
-trait HasInlineSeqs[T <: HasInlineSeq[T],Q <: HasInlineSeqs[T,Q]] {
-  val inlineSeqs : Seq[T]
-  def mapInlineSeqs(f : Seq[T] => Seq[T]) : Q 
-  final lazy val empty = inlineSeqs.forall(_.empty)
-  final def normalized = mapInlineSeqs { x =>
-    x.flatMap(y => HasInlineSeq.simplify(Some(y)))
-  }
-}
-
-object HasInlineSeqs {
-  def simplify[T <: HasInlineSeq[T],Q <: HasInlineSeqs[T,Q]](x : Option[Q]) : Option[Q] =
-    x.map(_.normalized).filterNot(_.empty)    
-}
-
-sealed trait InlineElement extends Product with LI_Item
-
-sealed trait LXInlineElement extends InlineElement
 
 final case class Remissao(href : LexMLURN, inlineSeq : InlineSeq = InlineSeq()) extends LXInlineElement with HasInlineSeq[Remissao] {
   def mapInlineSeq(f : InlineSeq => InlineSeq) = Remissao(href,f(inlineSeq))
@@ -363,14 +431,19 @@ final case class EmLinha(nome : String, inlineSeq : InlineSeq = InlineSeq()) ext
  * Blocos
  */
 
-abstract sealed trait BlockElement extends AlteracaoElement
+abstract sealed trait BlockElement extends AlteracaoElement 
 
-final case class ConteudoExterno(conteudo : scala.xml.NodeSeq = scala.xml.NodeSeq.Empty) extends BlockElement
+final case class ConteudoExterno(conteudo : scala.xml.NodeSeq = scala.xml.NodeSeq.Empty) extends BlockElement {
+  val abreAspas : Boolean = false
+  val fechaAspas : Boolean = false
+}
 
 final case class Bloco(
     nome : String,
     inlineSeq : InlineSeq = InlineSeq()) extends BlockElement with HasInlineSeq[Bloco] {
   def mapInlineSeq(f : InlineSeq => InlineSeq) = Bloco(nome,f(inlineSeq))
+  val abreAspas : Boolean = false
+  val fechaAspas : Boolean = false
 }
 
 /**
@@ -379,24 +452,24 @@ final case class Bloco(
 
 abstract sealed trait HTMLBlock extends BlockElement
 
-final case class Paragraph(inlineSeq : InlineSeq) extends HasInlineSeq[Paragraph] with HTMLBlock with LI_Item {
+final case class Paragraph(inlineSeq : InlineSeq, abreAspas : Boolean, fechaAspas : Boolean) extends HasInlineSeq[Paragraph] with HTMLBlock with LI_Item {
   def mapInlineSeq(f : InlineSeq => InlineSeq) =
-      Paragraph(f(inlineSeq))
+      copy(inlineSeq = f(inlineSeq))
+      
 }
 
-final case class HTMLList(tipoLista : TipoLista, itens : Seq[LI] = Seq()) extends HTMLBlock with LI_Item
+final case class HTMLList(tipoLista : TipoLista, itens : Seq[LI] = Seq(), abreAspas : Boolean, fechaAspas : Boolean) extends HTMLBlock with LI_Item
 
-abstract sealed class TipoLista extends Product
 
-case object UL extends TipoLista
-
-case object OL extends TipoLista
 
 final case class LI(elems : Mixed[LI_Item] = Mixed()) 
 
-sealed trait LI_Item extends Product
 
-final case class Table() extends HTMLBlock
+
+final case class Table() extends HTMLBlock {
+  val abreAspas : Boolean = false
+  val fechaAspas : Boolean = false
+}
 
 /**
  * Containers
@@ -405,6 +478,8 @@ final case class Table() extends HTMLBlock
 abstract sealed trait Container extends AlteracaoElement with HasID {
   val id : ID
   val elems : Seq[BlockElement]
+  val abreAspas : Boolean = false
+  val fechaAspas : Boolean = false
 }
 
 final case class Div(id : ID, elems : Seq[BlockElement] = Seq()) extends Container
@@ -412,7 +487,7 @@ final case class Div(id : ID, elems : Seq[BlockElement] = Seq()) extends Contain
 final case class Agrupamento(
     nome : String,
     id : ID,
-    elems : Seq[BlockElement] = Seq()) extends Container
+    elems : Seq[BlockElement] = Seq()) extends Container 
 
     
 /**
@@ -470,40 +545,3 @@ final case class Marcador() extends InlineElement
 
 final case class Img() extends InlineElement
 
-/**
- * ID
- */
-    
-final case class ID(uri : URI)
-
-sealed trait HasID extends Product {
-  val id : ID
-}
-
-final case class LexMLURN(uri : URI) 
-
-final case class IDREF()
-
-/**
- * General Types
-	*/
-
-
-
-sealed trait HasLang extends Product {
-  val lang : Option[Lang]
-}
-
-final case class Lang(code : String = Lang.DEFAULT) {
-  val isDefault = code == Lang.DEFAULT
-}
-
-object Lang {
-  val DEFAULT = "pt_BR"
-  def simplify(f : Option[Lang]) : Option[Lang] =
-    f.filterNot(_.isDefault)
-}
-
-final case class Mixed[T](elems : Seq[Either[T,String]] = Seq()) {
-  val empty = elems.isEmpty
-}

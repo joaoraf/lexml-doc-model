@@ -4,7 +4,7 @@ import br.gov.lexml.schema.scala.{data => X}
 import br.gov.lexml.{doc => M}
 import java.net.URI
 import br.gov.lexml.doc.TituloDispositivo
-
+import scala.language.existentials
 
 object XmlConverter {
   
@@ -35,13 +35,13 @@ object XmlConverter {
   def scalaxbToModel(hs : X.HierarchicalStructure) : M.HierarchicalStructure = {
     val articulacao = M.Articulacao(hs.Articulacao.lXhierOption1.map(x => scalaxbToModel(x.key,x.value) : M.HierarchicalElement))
     hs.ParteInicial.map { pi =>
-      val ementa = pi.Ementa.map(x => M.Ementa(scalaxbToModel(x)))
+      val ementa = pi.Ementa.map(x => M.Ementa(scalaxbToModel(x),x.abreAspas == Some(X.S),x.fechaAspas == Some(X.S)))
       val formulaPromulgacao = pi.FormulaPromulgacao.flatMap(x =>
           x.p.map { i =>
-            M.FormulaPromulgacao(scalaxbToModel(i)) }
+            M.FormulaPromulgacao(scalaxbToModel(i),i.abreAspas == Some(X.S),i.fechaAspas == Some(X.S)) }
           )
-      val epigrafe = pi.Epigrafe.map(x => M.Epigrafe(scalaxbToModel(x)))
-      val preambulo = pi.Preambulo.map(x => M.Preambulo(scalaxbToModel(x).map(M.PreambuloLine)))
+      val epigrafe = pi.Epigrafe.map(x => M.Epigrafe(scalaxbToModel(x),x.abreAspas == Some(X.S),x.fechaAspas == Some(X.S)))
+      val preambulo = pi.Preambulo.map(x => M.Preambulo(scalaxbToModel(x).map(M.PreambuloLine),x.abreAspas == Some(X.S),x.fechaAspas == Some(X.S)))
       
       M.HierarchicalStructure(
           articulacao = articulacao,
@@ -81,6 +81,8 @@ object XmlConverter {
     val rotulo = in.Rotulo.map(M.Rotulo)
     val nomeAgrupador = in.NomeAgrupador.map(x => M.NomeAgrupador(scalaxbToModel(x)))
     val elems = in.lXhierOption3.map(x => scalaxbToModel(x.key,x.value).asInstanceOf[M.HierarchicalElement])
+    val abreAspas = in.abreAspas == Some(X.S)
+    val fechaAspas = in.fechaAspas == Some(X.S)
     tipo match {
       case t : M.TipoAgrupadorPredef =>
         M.AgrupadorPredef(
@@ -88,14 +90,14 @@ object XmlConverter {
             id = id,
             rotulo = rotulo,
             nomeAgrupador = nomeAgrupador,
-            elems = elems)
+            elems = elems, abreAspas, fechaAspas)
       case _ => 
         M.AgrupadorGenerico(
             nome = in.nome.getOrElse(sys.error("Missing attribute 'nome' in (" + label +") " + in)),
             id = id,
             rotulo = rotulo,
             nomeAgrupador = nomeAgrupador,
-            elems = elems)
+            elems = elems, abreAspas, fechaAspas)
     }    
   }
   
@@ -113,7 +115,9 @@ object XmlConverter {
     val tipo = tiposDispositivo.getOrElse(label, sys.error("Unexpected label in tiposDispositivo: " + ((label,in)))) ;                   
     val id = strToID(in.id.getOrElse(sys.error("Expecting id in " + ((label,in)))))
     val rotulo = in.Rotulo.map(M.Rotulo)
-    val titulo = in.TituloDispositivo.map(x => M.TituloDispositivo(scalaxbToModel(x)))         
+    val titulo = in.TituloDispositivo.map(x => M.TituloDispositivo(scalaxbToModel(x)))
+    val abreAspas = in.abreAspas == Some(X.S)
+    val fechaAspas = in.fechaAspas == Some(X.S)   
     val conteudo : Option[M.ConteudoDispositivo] = if(in.textoOmitido == Some(X.S)) { 
         Some(M.OmissisSimples) 
       } else if(!in.p.isEmpty) { 
@@ -138,7 +142,7 @@ object XmlConverter {
           rotulo = rotulo, 
           conteudo = conteudo, 
           alteracao = alteracao, 
-          containers = containers)
+          containers = containers, abreAspas, fechaAspas)
       case M.TD_Generico => 
         M.DispositivoGenerico(
           id = id,           
@@ -146,7 +150,7 @@ object XmlConverter {
           rotulo = rotulo, 
           conteudo = conteudo, 
           alteracao = alteracao, 
-          containers = containers)
+          containers = containers, abreAspas, fechaAspas)
       case M.TDP_Artigo => 
         M.Artigo(
           id = id,           
@@ -154,7 +158,7 @@ object XmlConverter {
           rotulo = rotulo, 
           conteudo = conteudo, 
           alteracao = alteracao, 
-          containers = containers)      
+          containers = containers, abreAspas, fechaAspas)      
     } 
   }  
   
@@ -225,9 +229,13 @@ object XmlConverter {
         
     def optAttr[T,R](f : X.GenInline => Option[T],g : T => R) : Option[R]
         = f(in).map(g)
+        
+    val abreAspas = in.abreAspas == Some(X.S)
+    val fechaAspas = in.fechaAspas == Some(X.S)   
+        
     label match {  
-      case "Ementa" => M.Ementa(inl) : SomeHasInlineSeq
-      case "Epigrafe" => M.Epigrafe(inl) : SomeHasInlineSeq
+      case "Ementa" => M.Ementa(inl,abreAspas,fechaAspas) : SomeHasInlineSeq
+      case "Epigrafe" => M.Epigrafe(inl,abreAspas,fechaAspas) : SomeHasInlineSeq
       case "NomeAgrupador" => M.NomeAgrupador(inl) : SomeHasInlineSeq
       case "RemissaoMultipla" => 
         M.RemissaoMultipla(
@@ -256,7 +264,7 @@ object XmlConverter {
             target = in.target,
             inlineSeq = inl
           ) : SomeHasInlineSeq
-      case "p" => M.Paragraph(inl) : SomeHasInlineSeq
+      case "p" => M.Paragraph(inl,abreAspas,fechaAspas) : SomeHasInlineSeq
       case "th" => sys.error("Tables (th) are unsupported at the moment: " + in) : SomeHasInlineSeq
       case "td" => sys.error("Tables (td) are unsupported at the moment: " + in) : SomeHasInlineSeq
       case "i" => M.GenHtmlInlineElement(M.TGHIE_I,inl) : SomeHasInlineSeq
