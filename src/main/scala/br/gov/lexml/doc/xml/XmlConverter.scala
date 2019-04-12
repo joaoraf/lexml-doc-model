@@ -285,8 +285,7 @@ object XmlConverter {
       case (Some(l),x : X.GenInline) => scalaxbToModel3(l,x) match {
         case y : M.InlineElement => Left(y) : E
         case z => sys.error("Unexpected " + z + " in " + in) : E
-      }
-      case (_, x : X.Alteracao) => Left(scalaxbToModel(x)) : E
+      }     
     }    
     M.InlineSeq(mixedElems = M.Mixed(elems), lang = lang)
   }

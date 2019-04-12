@@ -389,7 +389,7 @@ final case class Omissis(
 final case class Alteracao(
     id : ID,
     base : Option[LexMLURN] = None,
-    mixedElems : Mixed[AlteracaoElement] = Mixed()) extends HasID with LXInlineElement
+    mixedElems : Mixed[AlteracaoElement] = Mixed()) extends HasID 
 
 abstract sealed trait AlteracaoElement extends Product {
   val abreAspas : Boolean
