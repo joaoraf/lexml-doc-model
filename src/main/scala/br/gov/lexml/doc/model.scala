@@ -153,21 +153,32 @@ final case class HierarchicalStructure(
         
 }
 
-final case class FormulaPromulgacao(inlineSeq : InlineSeq,
-    abreAspas : Boolean, fechaAspas : Boolean) extends HasInlineSeq[FormulaPromulgacao]
+final case class FormulaPromulgacao(
+    inlineSeq : InlineSeq,
+    abreAspas : Boolean = false, 
+    fechaAspas : Boolean = false,
+    notaAlteracao : Option[String]) extends HasInlineSeq[FormulaPromulgacao]
   with AlteracaoElement {
   
   override def mapInlineSeq(f : InlineSeq => InlineSeq) = 
     copy(inlineSeq = f (inlineSeq))
 }
 
-final case class Epigrafe(inlineSeq : InlineSeq = InlineSeq(), abreAspas : Boolean, fechaAspas : Boolean) extends HasInlineSeq[Epigrafe] 
+final case class Epigrafe(
+    inlineSeq : InlineSeq = InlineSeq(), 
+    abreAspas : Boolean = false, 
+    fechaAspas : Boolean = false,
+    notaAlteracao : Option[String]) extends HasInlineSeq[Epigrafe] 
   with AlteracaoElement {
   override def mapInlineSeq(f : InlineSeq => InlineSeq) = 
     copy(inlineSeq = f (inlineSeq))
 }
 
-final case class Ementa(inlineSeq : InlineSeq = InlineSeq(), abreAspas : Boolean, fechaAspas : Boolean) extends HasInlineSeq[Ementa] 
+final case class Ementa(
+    inlineSeq : InlineSeq = InlineSeq(), 
+    abreAspas : Boolean = false, 
+    fechaAspas : Boolean = false,
+    notaAlteracao : Option[String]) extends HasInlineSeq[Ementa] 
   with AlteracaoElement {
   override def mapInlineSeq(f : InlineSeq => InlineSeq) = 
     copy(inlineSeq = f (inlineSeq))
@@ -178,7 +189,11 @@ final case class PreambuloLine(inlineSeq : InlineSeq = InlineSeq()) extends HasI
     copy(inlineSeq = f (inlineSeq))
 }
 
-final case class Preambulo(inlineSeqs : Seq[PreambuloLine] = Seq(), abreAspas : Boolean, fechaAspas : Boolean) extends HasInlineSeqs[PreambuloLine,Preambulo] 
+final case class Preambulo(
+    inlineSeqs : Seq[PreambuloLine] = Seq(), 
+    abreAspas : Boolean = false, 
+    fechaAspas : Boolean = false,
+    notaAlteracao : Option[String]) extends HasInlineSeqs[PreambuloLine,Preambulo] 
   with AlteracaoElement {
   override def mapInlineSeqs(f : Seq[PreambuloLine] => Seq[PreambuloLine]) = 
     copy(inlineSeqs = f (inlineSeqs))
@@ -239,8 +254,9 @@ final case class AgrupadorPredef(
     rotulo : Option[Rotulo] = None,
     nomeAgrupador : Option[NomeAgrupador] = None,
     elems : Seq[HierarchicalElement] = Seq(), 
-    abreAspas : Boolean, 
-    fechaAspas : Boolean) extends Agrupador
+    abreAspas : Boolean = false, 
+    fechaAspas : Boolean = false,
+    notaAlteracao : Option[String]) extends Agrupador
 
 final case class AgrupadorGenerico(
     nome : String,    
@@ -248,8 +264,9 @@ final case class AgrupadorGenerico(
     rotulo : Option[Rotulo] = None,
     nomeAgrupador : Option[NomeAgrupador] = None,
     elems : Seq[HierarchicalElement] = Seq(), 
-    abreAspas : Boolean, 
-    fechaAspas : Boolean) extends Agrupador {
+    abreAspas : Boolean = false, 
+    fechaAspas : Boolean = false,
+    notaAlteracao : Option[String]) extends Agrupador {
   final val tipoAgrupador = TA_Generico
 }
 
@@ -337,8 +354,9 @@ final case class DispositivoPredefNA(
     conteudo : Option[ConteudoDispositivo] = None,
     alteracao : Option[Alteracao] = None,
     containers : Seq[LXContainer] = Seq(), 
-    abreAspas : Boolean, 
-    fechaAspas : Boolean        
+    abreAspas : Boolean = false, 
+    fechaAspas : Boolean = false,
+    notaAlteracao : Option[String]        
 )  extends DispositivoPredef with DispositivoNaoArtigo {    
   val tipoDispositivoPredef = tipoDispositivo
   val tipoDispositivoNaoArtigo = tipoDispositivo  
@@ -352,8 +370,9 @@ final case class DispositivoGenerico(
     conteudo : Option[ConteudoDispositivo] = None,
     alteracao : Option[Alteracao] = None,
     containers : Seq[LXContainer] = Seq(), 
-    abreAspas : Boolean, 
-    fechaAspas : Boolean) extends DispositivoNaoArtigo {
+    abreAspas : Boolean = false, 
+    fechaAspas : Boolean = false,
+    notaAlteracao : Option[String]) extends DispositivoNaoArtigo {
   val tipoDispositivoNaoArtigo = TD_Generico
 }
     
@@ -369,9 +388,11 @@ final case class Artigo(
     conteudo : Option[ConteudoDispositivo] = None,
     alteracao : Option[Alteracao] = None,
     containers : Seq[LXContainer] = Seq(), 
-    abreAspas : Boolean, 
-    fechaAspas : Boolean) extends DispositivoPredef with HierarchicalElement {
+    abreAspas : Boolean = false, 
+    fechaAspas : Boolean = false,
+    notaAlteracao : Option[String]) extends DispositivoPredef with HierarchicalElement {
   val tipoDispositivoPredef = TDP_Artigo
+  override val tipoDispositivo = TDP_Artigo   
 }
 
 /**
@@ -394,6 +415,7 @@ final case class Alteracao(
 abstract sealed trait AlteracaoElement extends Product {
   val abreAspas : Boolean
   val fechaAspas : Boolean
+  val notaAlteracao : Option[String]
 }
 
 /**
@@ -433,9 +455,11 @@ final case class EmLinha(nome : String, inlineSeq : InlineSeq = InlineSeq()) ext
 
 abstract sealed trait BlockElement extends AlteracaoElement 
 
-final case class ConteudoExterno(conteudo : scala.xml.NodeSeq = scala.xml.NodeSeq.Empty) extends BlockElement {
+final case class ConteudoExterno(
+    conteudo : scala.xml.NodeSeq = scala.xml.NodeSeq.Empty) extends BlockElement {
   val abreAspas : Boolean = false
   val fechaAspas : Boolean = false
+  val notaAlteracao : Option[String] = None
 }
 
 final case class Bloco(
@@ -444,6 +468,7 @@ final case class Bloco(
   def mapInlineSeq(f : InlineSeq => InlineSeq) = Bloco(nome,f(inlineSeq))
   val abreAspas : Boolean = false
   val fechaAspas : Boolean = false
+  val notaAlteracao : Option[String] = None
 }
 
 /**
@@ -452,13 +477,22 @@ final case class Bloco(
 
 abstract sealed trait HTMLBlock extends BlockElement
 
-final case class Paragraph(inlineSeq : InlineSeq, abreAspas : Boolean, fechaAspas : Boolean) extends HasInlineSeq[Paragraph] with HTMLBlock with LI_Item {
+final case class Paragraph(
+    inlineSeq : InlineSeq, 
+    abreAspas : Boolean = false, 
+    fechaAspas : Boolean = false,
+    notaAlteracao : Option[String]) extends HasInlineSeq[Paragraph] with HTMLBlock with LI_Item {
   def mapInlineSeq(f : InlineSeq => InlineSeq) =
       copy(inlineSeq = f(inlineSeq))
       
 }
 
-final case class HTMLList(tipoLista : TipoLista, itens : Seq[LI] = Seq(), abreAspas : Boolean, fechaAspas : Boolean) extends HTMLBlock with LI_Item
+final case class HTMLList(
+    tipoLista : TipoLista, 
+    itens : Seq[LI] = Seq(), 
+    abreAspas : Boolean = false, 
+    fechaAspas : Boolean = false,
+    notaAlteracao : Option[String]) extends HTMLBlock with LI_Item
 
 
 
@@ -469,6 +503,7 @@ final case class LI(elems : Mixed[LI_Item] = Mixed())
 final case class Table() extends HTMLBlock {
   val abreAspas : Boolean = false
   val fechaAspas : Boolean = false
+  val notaAlteracao : Option[String] = None
 }
 
 /**
@@ -480,6 +515,7 @@ abstract sealed trait Container extends AlteracaoElement with HasID {
   val elems : Seq[BlockElement]
   val abreAspas : Boolean = false
   val fechaAspas : Boolean = false
+  val notaAlteracao : Option[String] = None
 }
 
 final case class Div(id : ID, elems : Seq[BlockElement] = Seq()) extends Container
