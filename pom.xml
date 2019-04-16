@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>br.gov.lexml</groupId>
     <artifactId>lexml-doc-model</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <properties>
         <scala.version>2.11</scala.version>
@@ -12,6 +12,20 @@
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
     </properties>
 
+    <scm>
+        <url>https://github.com/lexml/${project.artifactId}</url>
+        <developerConnection>scm:git:https://github.com/lexml/${project.artifactId}.git</developerConnection>
+        <connection>scm:git:https://github.com/lexml/${project.artifactId}.git</connection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <distributionManagement>
+        <repository>
+            <id>bintray-lexml</id>
+            <name>Bintray ${project.artifactId} Repository</name>
+            <url>https://api.bintray.com/maven/lexml/lexml/${project.artifactId}/;publish=1</url>
+        </repository>
+    </distributionManagement>
 
     <build>
         <sourceDirectory>src/main/scala</sourceDirectory>
