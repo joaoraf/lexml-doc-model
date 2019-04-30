@@ -442,7 +442,8 @@ final case class RemissaoMultipla(base : LexMLURN,inlineSeq : InlineSeq = Inline
   def mapInlineSeq(f : InlineSeq => InlineSeq) = RemissaoMultipla(base,f(inlineSeq))
 }
 
-final case class Formula() extends LXInlineElement
+final case class Formula(
+    mathmlElem : scala.xml.Elem) extends LXInlineElement
 
 final case class EmLinha(nome : String, inlineSeq : InlineSeq = InlineSeq()) extends InlineElement with HasInlineSeq[EmLinha] {
   def mapInlineSeq(f : InlineSeq => InlineSeq) =
