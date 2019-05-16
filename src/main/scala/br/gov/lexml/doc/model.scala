@@ -142,26 +142,34 @@ final case class HierarchicalStructure(
     formulaPromulgacao : Option[FormulaPromulgacao] = None,
     epigrafe : Option[Epigrafe] = None,
     ementa : Option[Ementa] = None,
-    preambulo : Option[Preambulo] = None) {
+    preambulo : Option[Preambulo] = None,
+    localDataFecho : Option[LocalDataFecho] = None,
+    assinaturas : Seq[Assinatura[_]] = Seq()) {
   def normalized : HierarchicalStructure = 
     HierarchicalStructure(
         articulacao = articulacao.normalized,
-        formulaPromulgacao = HasInlineSeq.simplify(formulaPromulgacao),
+        formulaPromulgacao = HasInlineSeqs.simplify[Paragraph,FormulaPromulgacao](formulaPromulgacao),
         epigrafe = HasInlineSeq.simplify(epigrafe),
         ementa = HasInlineSeq.simplify(ementa),
-        preambulo = HasInlineSeqs.simplify[PreambuloLine,Preambulo](preambulo))
+        preambulo = HasInlineSeqs.simplify[PreambuloLine,Preambulo](preambulo),
+        localDataFecho = HasInlineSeqs.simplify[Paragraph,LocalDataFecho](localDataFecho),
+        assinaturas = assinaturas)
         
 }
 
+
+
+
 final case class FormulaPromulgacao(
-    inlineSeq : InlineSeq,
-    abreAspas : Boolean = false, 
-    fechaAspas : Boolean = false,
-    notaAlteracao : Option[String]) extends HasInlineSeq[FormulaPromulgacao]
+    inlineSeqs : Seq[Paragraph] = Seq()
+    ) extends HasInlineSeqs[Paragraph,FormulaPromulgacao]
   with AlteracaoElement {
   
-  override def mapInlineSeq(f : InlineSeq => InlineSeq) = 
-    copy(inlineSeq = f (inlineSeq))
+  override def mapInlineSeqs(f : Seq[Paragraph] => Seq[Paragraph]) = 
+    copy(inlineSeqs = f (inlineSeqs))
+    val abreAspas = false
+    val fechaAspas = false
+    val notaAlteracao : Option[String] = None
 }
 
 final case class Epigrafe(
@@ -197,6 +205,18 @@ final case class Preambulo(
   with AlteracaoElement {
   override def mapInlineSeqs(f : Seq[PreambuloLine] => Seq[PreambuloLine]) = 
     copy(inlineSeqs = f (inlineSeqs))
+}
+
+final case class LocalDataFecho(inlineSeqs : Seq[Paragraph] = Seq()) extends HasInlineSeqs[Paragraph,LocalDataFecho] {  
+  override def mapInlineSeqs(f : Seq[Paragraph] => Seq[Paragraph]) = 
+    copy(inlineSeqs = f (inlineSeqs))    
+}
+
+abstract sealed class Assinatura[T <: Assinatura[T]] extends Product
+
+final case class AssinaturaTexto(inlineSeqs : Seq[Paragraph] = Seq()) extends Assinatura[AssinaturaTexto] with HasInlineSeqs[Paragraph,AssinaturaTexto] {  
+  override def mapInlineSeqs(f : Seq[Paragraph] => Seq[Paragraph]) = 
+    copy(inlineSeqs = f (inlineSeqs))    
 }
 
 /**
@@ -482,7 +502,7 @@ final case class Paragraph(
     inlineSeq : InlineSeq, 
     abreAspas : Boolean = false, 
     fechaAspas : Boolean = false,
-    notaAlteracao : Option[String]) extends HasInlineSeq[Paragraph] with HTMLBlock with LI_Item {
+    notaAlteracao : Option[String] = None) extends HasInlineSeq[Paragraph] with HTMLBlock with LI_Item {
   def mapInlineSeq(f : InlineSeq => InlineSeq) =
       copy(inlineSeq = f(inlineSeq))
       

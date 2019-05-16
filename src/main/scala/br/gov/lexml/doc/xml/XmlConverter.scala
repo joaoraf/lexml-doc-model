@@ -5,8 +5,11 @@ import br.gov.lexml.{doc => M}
 import java.net.URI
 import br.gov.lexml.doc.TituloDispositivo
 import scala.language.existentials
+import org.slf4j.LoggerFactory
+import br.gov.lexml.schema.scala.scalaxb
 
 object XmlConverter {
+  val logger = LoggerFactory.getLogger(this.getClass)
   
   def scalaxbToModel(md : X.Metadado) : M.Metadado = {
     M.Metadado(identificacao = M.Identificacao(M.LexMLURN(md.Identificacao.URN)))    
@@ -34,22 +37,19 @@ object XmlConverter {
   
   def scalaxbToModel(hs : X.HierarchicalStructure) : M.HierarchicalStructure = {
     val articulacao = M.Articulacao(hs.Articulacao.lXhierOption1.map(x => scalaxbToModel(x.key,x.value) : M.HierarchicalElement))
-    hs.ParteInicial.map { pi =>
+    val res1 = M.HierarchicalStructure(articulacao = articulacao)
+    val res2 = hs.ParteInicial.map { pi =>
       val ementa = pi.Ementa.map(x => 
         M.Ementa(
             scalaxbToModel(x),
             abreAspas = x.abreAspas == Some(X.S),
             fechaAspas = x.fechaAspas == Some(X.S),
             notaAlteracao = x.notaAlteracao))
-      val formulaPromulgacao = pi.FormulaPromulgacao.flatMap(x =>
-          x.p.map { i =>
+      val formulaPromulgacao = pi.FormulaPromulgacao.map(x =>
             M.FormulaPromulgacao(
-                scalaxbToModel(i),
-                abreAspas = i.abreAspas == Some(X.S),
-                fechaAspas = i.fechaAspas == Some(X.S),
-                notaAlteracao = i.notaAlteracao
-                ) }
-          )
+                x.p.map(scalaxbToModel).map(y => M.Paragraph(inlineSeq = y))
+                ) )
+          
       val epigrafe = pi.Epigrafe.map(x => M.Epigrafe(
           scalaxbToModel(x),
           abreAspas = x.abreAspas == Some(X.S),
@@ -61,15 +61,25 @@ object XmlConverter {
             abreAspas = x.abreAspas == Some(X.S),
             fechaAspas = x.fechaAspas == Some(X.S),
             notaAlteracao = x.notaAlteracao))
-      
-      M.HierarchicalStructure(
-          articulacao = articulacao,
+       
+      res1.copy(          
           formulaPromulgacao = formulaPromulgacao,
           epigrafe = epigrafe,
           ementa = ementa,
           preambulo = preambulo
           )
-    }.getOrElse(M.HierarchicalStructure(articulacao = articulacao))    
+    }.getOrElse(res1)
+    val res3 = hs.ParteFinal.map { pf =>
+      val ldf = pf.LocalDataFecho.map { pars => M.LocalDataFecho(pars.p.map(scalaxbToModel).map(y => M.Paragraph(inlineSeq = y))) }      
+      val assinaturas : Seq[M.Assinatura[_]] = pf.parteFinalAssinaturaOption2.collect {
+        case scalaxb.DataRecord(_,Some("AssinaturaTexto"),pars : X.ParsType) => Seq(M.AssinaturaTexto(pars.p.map(scalaxbToModel).map(y => M.Paragraph(inlineSeq = y))))
+        case scalaxb.DataRecord(ns,label,data) => 
+          logger.warn(s"Ignorando assinatura: ns=${ns}, label=${label}, data=${data}")
+          Seq()
+      }.flatten      
+      res2.copy(localDataFecho = ldf,assinaturas = assinaturas)
+    }.getOrElse(res2)
+    res3
   }
   
   def scalaxbToModel(in : X.Omissis) : M.Omissis = 
