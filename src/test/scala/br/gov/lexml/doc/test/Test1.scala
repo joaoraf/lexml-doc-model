@@ -6,6 +6,8 @@ import br.gov.lexml.schema.scala.LexmlSchema
 import br.gov.lexml.doc.xml.XmlConverter
 import br.gov.lexml.doc._
 import scala.collection.Seq
+import br.gov.lexml.doc.xml.XmlConverter.SomeLexmlDocument
+import br.gov.lexml.doc.xml.XmlConverter.SomeLexmlDocument
 
 object Test1 extends App {
   
@@ -14,7 +16,7 @@ object Test1 extends App {
   val scalaxbElems = samples.flatMap { f =>
     try { Seq((f,LexmlSchema(f))) } catch { case _ : Exception => Seq() }
   }
-  val elems = scalaxbElems.flatMap { case (f,e) =>
+  val elems = scalaxbElems.flatMap[(File,SomeLexmlDocument),Seq[(File,SomeLexmlDocument)]]{ case (f,e) =>
     try {
       Seq((f,XmlConverter.scalaxbToModel(e)))
     } catch {

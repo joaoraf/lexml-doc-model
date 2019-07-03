@@ -12,21 +12,30 @@ object XmlConverter {
   val logger = LoggerFactory.getLogger(this.getClass)
   
   def scalaxbToModel(md : X.Metadado) : M.Metadado = {
-    M.Metadado(identificacao = M.Identificacao(M.LexMLURN(md.Identificacao.URN)))    
+    val xNotas = md.Notas.flatMap(_.notassequence1.map(_.Nota))
+    val notas = xNotas.map { n =>
+      val id = n.id
+      val autor = n.autor
+      val pl = n.p.map(scalaxbToModel).map(x => M.Paragraph(x))
+      M.Nota(id = id, autor = autor, contents = pl)
+    }
+    M.Metadado(identificacao = M.Identificacao(M.LexMLURN(md.Identificacao.URN)), notas = notas)    
   }
   
-  def scalaxbToModel(dt : X.LexML) : M.LexmlDocument = {
+  type SomeLexmlDocument = M.LexmlDocument[T] forSome { type T <: M.DocumentContents[T] }
+  
+  def scalaxbToModel(dt : X.LexML) : SomeLexmlDocument  = {
     val md = scalaxbToModel(dt.Metadado)    
     val co = dt.documentContentOption2
-    val contents = (co.key,co.value) match {
-      case (_,pj : X.ProjetoNorma) =>
-        scalaxbToModel(pj)
+    (co.key,co.value) match {
+      case (_,pj : X.ProjetoNorma) =>        
+        M.LexmlDocument(md,scalaxbToModel(pj)) : SomeLexmlDocument
       case (Some("Norma"),norma : X.HierarchicalStructure) =>
-        M.Norma(scalaxbToModel(norma))
+        M.LexmlDocument(md,M.Norma(scalaxbToModel(norma))) : SomeLexmlDocument
       case (key,value) =>
         sys.error(s"Tipo de documento não suportado. Label = ${key}, conteudo = ${value}")
     }
-    M.LexmlDocument(md,contents)
+
   }
   
   def scalaxbToModel(pj : X.ProjetoNorma) : M.ProjetoNorma = {

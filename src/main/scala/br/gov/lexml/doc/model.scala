@@ -3,9 +3,9 @@ package br.gov.lexml.doc
 import java.net.URI
 import scala.language.existentials
 
-final case class LexmlDocument(
+final case class LexmlDocument[T <: DocumentContents[T]](
     metadado : Metadado,
-    contents : DocumentContents)
+    contents : DocumentContents[T])
 
 /**
  * ID
@@ -19,7 +19,7 @@ sealed trait HasID extends Product {
 
 final case class LexMLURN(uri : URI) 
 
-final case class IDREF()
+final case class IDREF(id : String)
 
 /**
  * General Types
@@ -50,11 +50,13 @@ final case class Mixed[T](elems : Seq[Either[T,String]] = Seq()) {
  */
     
 final case class Metadado(
-    identificacao : Identificacao
+    identificacao : Identificacao,
+    notas : Seq[Nota] = Seq()
     )
 
 final case class Identificacao(urn : LexMLURN)     
-    
+
+final case class Nota(id : Option[String] = None, autor : Option[String] = None, contents : Seq[Paragraph] = Seq())
     
 /**
  * Document Contents
@@ -122,14 +124,20 @@ case object DCT_DocumentoGenerico extends DocumentContentsType
 
 case object DCT_Anexo extends DocumentContentsType
 
-abstract sealed class DocumentContents(val dcType : DocumentContentsType) extends Product
+abstract sealed class DocumentContents[T <: DocumentContents[T]](val dcType : DocumentContentsType) extends Product {
+  def mapNorma(f : Norma => Norma) : T
+}
 
-final case class Norma(contents : HierarchicalStructure) extends DocumentContents(DCT_Norma)
+final case class Norma(contents : HierarchicalStructure) extends DocumentContents[Norma](DCT_Norma) {
+  override def mapNorma(f : Norma => Norma) = f(this)
+}
 
 final case class ProjetoNorma(
     norma : Norma,
     justificacao : Seq[Justificacao] = Seq(),
-    autorProjeto : Seq[String] = Seq()) extends DocumentContents(DCT_ProjetoNorma)
+    autorProjeto : Seq[String] = Seq()) extends DocumentContents[ProjetoNorma](DCT_ProjetoNorma) {
+  override def mapNorma(f : Norma => Norma) = copy(norma = f(norma))
+}
 
 final case class Justificacao()
 
