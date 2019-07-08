@@ -321,19 +321,25 @@ object XmlConverter {
       case "sub" => M.GenHtmlInlineElement(M.TGHIE_Sub,inl) : SomeHasInlineSeq
       case "ins" => M.GenHtmlInlineElement(M.TGHIE_Ins,inl) : SomeHasInlineSeq
       case "dfn" => M.GenHtmlInlineElement(M.TGHIE_Dfn,inl) : SomeHasInlineSeq
-      case "sup" => M.GenHtmlInlineElement(M.TGHIE_Sup,inl) : SomeHasInlineSeq
-
+      case "sup" => M.GenHtmlInlineElement(M.TGHIE_Sup,inl) : SomeHasInlineSeq      
     }
   }
   def scalaxbToModel(in : X.GenInline) : M.InlineSeq = {
+    
     val lang = if (in.xmllang == "pt-BR") { None } else { Some(M.Lang(in.xmllang)) }
     type E = Either[M.InlineElement,String]
     val elems : Seq[E] = in.mixed.map(x => (x.key,x.value)).collect {
       case (None,x : String) => Right(x) : E
-      case (Some(l),x : X.GenInline) => scalaxbToModel3(l,x) match {
-        case y : M.InlineElement => Left(y) : E
-        case z => sys.error("Unexpected " + z + " in " + in) : E
-      }     
+      case (Some(l),x : X.GenInline) =>
+        
+        scalaxbToModel3(l,x) match {
+          case y : M.InlineElement => Left(y) : E
+          case z => sys.error("Unexpected " + z + " in " + in) : E
+        }
+      case (Some(l),nr : X.NotaReferenciada) =>
+        Left(M.NotaReferenciada(M.IDREF(nr.nota)))
+      case (Some(l),x) =>
+        sys.error(s"Unexpected class: l=${l}, class=${x.getClass.getName}, x=${x}")        
     }    
     M.InlineSeq(mixedElems = M.Mixed(elems), lang = lang)
   }
