@@ -173,12 +173,12 @@ object XmlConverter {
         None
       }
     val alteracao : Option[M.Alteracao] = in.Alteracao.map(scalaxbToModel)
-
+    
     val containers : Seq[M.LXContainer] = in.lXcontainersOmissisOption5.map(d => (d.key,d.value)).collect {
       case (_,x : X.Omissis) => scalaxbToModel(x) : M.LXContainer 
       case (Some(l),x : X.DispositivoType) => scalaxbToModel1(l,x) : M.Dispositivo
       case (None,x) => sys.error("Expected label at " + x)
-    }
+    } ++ in.Pena.map(x => scalaxbToModel1("Pena",x) : M.Dispositivo)    
     
     tipo match {
       case t :  M.TipoDispositivoNaoArtigo with M.TipoDispositivoPredef => 
