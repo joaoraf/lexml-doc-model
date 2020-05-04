@@ -103,6 +103,7 @@ object XmlConverter {
     "Parte" -> M.TAP_Parte, 
     "Livro" -> M.TAP_Livro,
     "Titulo" -> M.TAP_Titulo,
+    "Subtitulo" -> M.TAP_Subtitulo,
     "Capitulo" -> M.TAP_Capitulo,
     "Secao" -> M.TAP_Secao,
     "Subsecao" -> M.TAP_Subsecao,

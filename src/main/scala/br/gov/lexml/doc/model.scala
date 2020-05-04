@@ -270,6 +270,8 @@ case object TAP_Livro extends TipoAgrupadorPredef
 
 case object TAP_Titulo extends TipoAgrupadorPredef
 
+case object TAP_Subtitulo extends TipoAgrupadorPredef
+
 case object TAP_Capitulo extends TipoAgrupadorPredef
 
 case object TAP_Secao extends TipoAgrupadorPredef
