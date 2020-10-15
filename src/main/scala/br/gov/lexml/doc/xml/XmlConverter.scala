@@ -174,7 +174,7 @@ object XmlConverter {
         None
       }
     val alteracao : Option[M.Alteracao] = in.Alteracao.map(scalaxbToModel)
-    
+    val nome = in.nome
     val containers : Seq[M.LXContainer] = in.lXcontainersOmissisOption5.map(d => (d.key,d.value)).collect {
       case (_,x : X.Omissis) => scalaxbToModel(x) : M.LXContainer 
       case (Some(l),x : X.DispositivoType) => scalaxbToModel1(l,x) : M.Dispositivo
@@ -193,7 +193,8 @@ object XmlConverter {
           containers = containers, abreAspas, fechaAspas, notaAlteracao)
       case M.TD_Generico => 
         M.DispositivoGenerico(
-          id = id,           
+          id = id,         
+          nome = nome.getOrElse(throw new RuntimeException("DispositivoGenerico sem nome: " + in)),
           titulo = titulo, 
           rotulo = rotulo, 
           conteudo = conteudo, 

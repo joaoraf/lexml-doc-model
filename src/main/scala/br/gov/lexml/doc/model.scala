@@ -386,7 +386,7 @@ final case class DispositivoPredefNA(
     containers : Seq[LXContainer] = Seq(), 
     abreAspas : Boolean = false, 
     fechaAspas : Boolean = false,
-    notaAlteracao : Option[String]        
+    notaAlteracao : Option[String] = None       
 )  extends DispositivoPredef with DispositivoNaoArtigo {    
   val tipoDispositivoPredef = tipoDispositivo
   val tipoDispositivoNaoArtigo = tipoDispositivo  
@@ -395,6 +395,7 @@ final case class DispositivoPredefNA(
 
 final case class DispositivoGenerico(
     id : ID,
+    nome : String,
     titulo : Option[TituloDispositivo] = None,
     rotulo : Option[Rotulo] = None,
     conteudo : Option[ConteudoDispositivo] = None,
@@ -402,7 +403,7 @@ final case class DispositivoGenerico(
     containers : Seq[LXContainer] = Seq(), 
     abreAspas : Boolean = false, 
     fechaAspas : Boolean = false,
-    notaAlteracao : Option[String]) extends DispositivoNaoArtigo {
+    notaAlteracao : Option[String] = None) extends DispositivoNaoArtigo {
   val tipoDispositivoNaoArtigo = TD_Generico
 }
     
