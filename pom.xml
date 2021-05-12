@@ -2,7 +2,10 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>br.gov.lexml</groupId>
     <artifactId>lexml-doc-model</artifactId>
-    <version>1.0.11-SNAPSHOT</version>
+    <version>1.0.12-SNAPSHOT</version>
+    <name>LexML Brazil Scala Data Model</name>
+    <description>Scala data structures for representing LexML Brazil documents.</description>
+    <url>https://github.com/lexml/lexml-doc-model</url>
 
     <properties>
         <scala.version>2.13</scala.version>
