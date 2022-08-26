@@ -152,7 +152,7 @@ final case class HierarchicalStructure(
     ementa : Option[Ementa] = None,
     preambulo : Option[Preambulo] = None,
     localDataFecho : Option[LocalDataFecho] = None,
-    assinaturas : Seq[Assinatura[_]] = Seq()) {
+    assinaturas : Seq[ParteFinalAssinatura] = Seq()) {
   def normalized : HierarchicalStructure = 
     HierarchicalStructure(
         articulacao = articulacao.normalized,
@@ -220,12 +220,18 @@ final case class LocalDataFecho(inlineSeqs : Seq[Paragraph] = Seq()) extends Has
     copy(inlineSeqs = f (inlineSeqs))    
 }
 
-abstract sealed class Assinatura[T <: Assinatura[T]] extends Product
+sealed trait ParteFinalAssinatura extends Product
 
-final case class AssinaturaTexto(inlineSeqs : Seq[Paragraph] = Seq()) extends Assinatura[AssinaturaTexto] with HasInlineSeqs[Paragraph,AssinaturaTexto] {  
+sealed trait ElementoAssinaturaGrupo extends ParteFinalAssinatura
+
+final case class AssinaturaTexto(inlineSeqs : Seq[Paragraph] = Seq()) extends ElementoAssinaturaGrupo with HasInlineSeqs[Paragraph,AssinaturaTexto] {
   override def mapInlineSeqs(f : Seq[Paragraph] => Seq[Paragraph]) = 
     copy(inlineSeqs = f (inlineSeqs))    
 }
+
+final case class Assinatura(nomes : Seq[String], cargos : Seq[String] = Seq()) extends ElementoAssinaturaGrupo
+
+final case class AssinaturaGrupo(nomeGrupo : String, assinaturas : Seq[ElementoAssinaturaGrupo]) extends ParteFinalAssinatura
 
 /**
  * Articulacao

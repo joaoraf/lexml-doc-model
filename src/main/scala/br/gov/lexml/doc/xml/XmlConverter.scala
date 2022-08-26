@@ -2,11 +2,15 @@ package br.gov.lexml.doc.xml
 
 import br.gov.lexml.schema.scala.{data => X}
 import br.gov.lexml.{doc => M}
+
 import java.net.URI
 import br.gov.lexml.doc.TituloDispositivo
+import br.gov.lexml.schema.scala.data.{Assinatura, AssinaturaGrupo, ParsType}
+
 import scala.language.existentials
 import org.slf4j.LoggerFactory
 import br.gov.lexml.schema.scala.scalaxb
+import br.gov.lexml.schema.scala.scalaxb.DataRecord
 
 object XmlConverter {
   val logger = LoggerFactory.getLogger(this.getClass)
@@ -79,18 +83,30 @@ object XmlConverter {
           )
     }.getOrElse(res1)
     val res3 = hs.ParteFinal.map { pf =>
-      val ldf = pf.LocalDataFecho.map { pars => M.LocalDataFecho(pars.p.map(scalaxbToModel).map(y => M.Paragraph(inlineSeq = y))) }      
-      val assinaturas : Seq[M.Assinatura[_]] = pf.parteFinalAssinaturaOption2.collect {
+      val ldf = pf.LocalDataFecho.map { pars => M.LocalDataFecho(pars.p.map(scalaxbToModel).map(y => M.Paragraph(inlineSeq = y))) }
+      val pfAssinaturas : Seq[M.ParteFinalAssinatura] = pf.partefinaloption.map { x => parseParteFinalOption(x.value) }
+      /*val assinaturas : Seq[M.Assinatura[_]] = pf.parteFinalAssinaturaOption2.collect {
         case scalaxb.DataRecord(_,Some("AssinaturaTexto"),pars : X.ParsType) => Seq(M.AssinaturaTexto(pars.p.map(scalaxbToModel).map(y => M.Paragraph(inlineSeq = y))))
         case scalaxb.DataRecord(ns,label,data) => 
           logger.warn(s"Ignorando assinatura: ns=${ns}, label=${label}, data=${data}")
           Seq()
-      }.flatten      
-      res2.copy(localDataFecho = ldf,assinaturas = assinaturas)
+      }.flatten */
+      res2.copy(localDataFecho = ldf,assinaturas = pfAssinaturas)
     }.getOrElse(res2)
     res3
   }
-  
+
+  def parseParteFinalOption(pfo: X.ParteFinalOption) : M.ParteFinalAssinatura = pfo match {
+    case x : X.AssinaturaGrupoOption => parseAssinaturaGrupoOption(x)
+    case AssinaturaGrupo(nomeGrupo, assinaturas) => M.AssinaturaGrupo(nomeGrupo = nomeGrupo,
+      assinaturas = assinaturas.map { x => parseAssinaturaGrupoOption(x.value) })
+  }
+
+  def parseAssinaturaGrupoOption(ago : X.AssinaturaGrupoOption) : M.ElementoAssinaturaGrupo = ago match {
+    case Assinatura(nomePessoa, cargo) => M.Assinatura(nomes = nomePessoa, cargos = cargo)
+    case ParsType(p) => M.AssinaturaTexto(p.map(scalaxbToModel).map(y => M.Paragraph(inlineSeq = y)))
+  }
+
   def scalaxbToModel(in : X.Omissis) : M.Omissis = 
     M.Omissis(
         id = strToID(in.id),
