@@ -4,10 +4,8 @@ import br.gov.lexml.schema.scala.data as X
 import br.gov.lexml.doc as M
 
 import java.net.URI
-import br.gov.lexml.doc.{Ementa, HasInlineSeq, LexmlDocument, Norma, ProjetoNorma, RemissaoMultipla, TituloDispositivo}
+import br.gov.lexml.doc.{Ementa, HasInlineSeq, LexmlDocument, Norma, ProjetoNorma, RemissaoMultipla, TipoAgrupador, TituloDispositivo}
 import br.gov.lexml.schema.scala.data.{Assinatura, AssinaturaGrupo, ParsType}
-
-import scala.language.existentials
 import org.slf4j.LoggerFactory
 
 import scala.annotation.unused
@@ -107,12 +105,12 @@ object XmlConverter:
   def scalaxbToModel(in : X.Omissis) : M.Omissis = 
     M.Omissis(
         id = strToID(in.id),
-        abreAspas = in.abreAspas == Some(X.S),
-        fechaAspas = in.fechaAspas == Some(X.S),
+        abreAspas = in.abreAspas.contains(X.S),
+        fechaAspas = in.fechaAspas.contains(X.S),
         notaAlteracao = in.notaAlteracao
         )
   
-  val tiposAgrupador = Map[String,M.TipoAgrupador](
+  val tiposAgrupador: Map[String, TipoAgrupador] = Map(
     "Parte" -> M.TAP.Parte,
     "Livro" -> M.TAP.Livro,
     "Titulo" -> M.TAP.Titulo,

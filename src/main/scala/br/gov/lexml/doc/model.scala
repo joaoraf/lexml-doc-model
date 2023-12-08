@@ -2,7 +2,6 @@ package br.gov.lexml.doc
 
 import java.net.URI
 import scala.annotation.unused
-import scala.language.existentials
 
 final case class LexmlDocument[T <: DocumentContents[T]](
     metadado : Metadado,
@@ -92,13 +91,8 @@ object HasInlineSeqs:
   def simplify[T <: HasInlineSeq[T],Q <: HasInlineSeqs[T,Q]](x : Option[Q]) : Option[Q] =
     x.map(_.normalized).filterNot(_.empty)
 
-abstract sealed class TipoLista extends Product
-
-@unused
-case object UL extends TipoLista
-
-@unused
-case object OL extends TipoLista
+enum TipoLista:
+  case UL, OL
 
 sealed trait LI_Item extends Product
 
